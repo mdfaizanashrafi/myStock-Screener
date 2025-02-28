@@ -1,0 +1,9 @@
+Flask==2.3.2
+requests==2.31.0
+pandas==2.0.3
+numpy==1.23.5
+psycopg2-binary==2.9.6  # For PostgreSQL
+SQLAlchemy==2.0.20      # For ORM (optional for Flask)
+Flask-SQLAlchemy==3.0.5 # For Flask database integration
+
+yfinance==0.2.31
