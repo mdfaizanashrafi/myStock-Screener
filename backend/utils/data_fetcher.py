@@ -219,5 +219,64 @@ def find_support_resistance(df,window=20):
     rolling_max=df['High'].rolling(window=window).max()
     rolling_min=df['Low'].rolling(window=window).min()
     support=rolling_min.iloc[-1]
+    resistance=rolling_max.iloc[-1]
+    return {"Support":support,'Resistance':resistance}
+
+#calculate Sharpe Ratio
+#it measures risk adjusted returns, helping investors evaluate the performance of a stock
+def calculate_sharpe_ratio(df,risk_free_rate=0.02):
+    daily_returns = df['Close'].pct_change().dropna()
+    mean_return=daily_returns.mean()
+    std_dev=daily_returns.std()
+    sharpe_ratio=(mean_return-risk_free_rate)/std_dev
+    annualized_sharpe=sharpe_ratio*(252**0.5)  #annualize the ratio
+    return annualized_sharpe
+
+#filter stocks by Technical Indicators(RSI,MACD)
+def filter_by_rsi(df,rsi_column='RSI',lower_bound=30,upper_bound=70):
+    return df[(df[rsi_column]>=lower_bound)&(df[rsi_column]<=upper_bound)]
+
+def filter_by_macd(df,macd_column='MACD',signal_column='Signal_Line'):
+    df['MACD_Crossover']=(df[macd_column]>df[signal_column]).astype(int)
+    return df[df['MACD_Crossover'].diff()==1]  #only include crossover points
+
+#FETCH SECTOR AND INDUSTRY DATA FOR A GIVEN STOCK
+def fetch_sector_industry(symbol):
+    try:
+        stock=yf.Ticker(symbol)
+        info=stock.info
+        return {
+            "Sector": info.get("sector"),
+            "Industry": info.get("industry")}
+    except Exception as e:
+        raise Exception(f"Error fetching sector/industry data for {symbol}:{e}")
+
+#calculate correlation between stocks
+def calculate_stock_correlation(stock1_df,stock2_df):
+    combined_df = pd.merge(stock1_df,stock2_df,on='Date',suffixes=('_stock1','_stock2_'))
+    correlation=combined_df['Close_stock1'].corr(combined_df['Close_stock2'])
+    return correlation
+
+#identify candlestick patterns:
+def detect_candlestick_patterns(df):
+    df['Doji']=abs(df['Close']-df['Open'])/(df['High']-df['Low'])<0.1
+    df['Hammer']=(df['Close']>df['Open'])&((df['High']-df['Close'])/(df['High']-df['Low'])<0.1)
+    df['Engulfing']=(df['Close']>df['Open'].shift())&(df['Open']<df['Close'].shift())
+    return df
+
+#Backtesting trading strategies:
+#simulate a simple trading strategy
+
+def backtest_strategy(df,rsi_column='RSI',buy_threshold=30,sell_threshold=70):
+    df['Signal']=0
+    df.loc[df[rsi_column]<buy_threshold,'Signal']=1
+    df.loc[df[rsi_column]>sell_threshold,'Signal']=-1
+    df['Positions']=df['Signal'].cumsum()
+    return df
+
+#Allow isers to export stock data to excel for further analysis
+def export_to_excel(df,filename="Stock_Data.xlsx"):
+    df.to_excel(filename,index=False)
+    print(f"Data exported to {filename}")
 
 

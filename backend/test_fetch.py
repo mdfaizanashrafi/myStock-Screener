@@ -1,5 +1,5 @@
-from backend.utils.data_fetcher import get_resampled_data
-from utils.data_fetcher import fetch_stock_data_with_cache
+from backend.utils.data_fetcher import get_resampled_data, fetch_financial_statements
+from utils.data_fetcher import fetch_stock_data_with_cache,fetch_stock_data
 
 if __name__ == '__main__':
     try:
@@ -20,3 +20,11 @@ if __name__ == '__main__':
 
     except Exception as e:
         print(f"Error: {e}")
+
+df = fetch_stock_data("RELIANCE.NS",period="1y",interval="1d")
+print(df.head())
+
+financials=fetch_financial_statements("RELIANCE.NS")
+print(financials["balance_sheet"])
+
+
