@@ -1,7 +1,11 @@
+from http.client import responses
+
+import requests
 import yfinance as yf
 import pandas as pd
 import os
 import time
+from datetime import datetime
 
 #fetch historical stock data for a given symbol using yfinance
 def fetch_stock_data(symbol,period='1y',interval='1d', retries=3, timeout=10):
@@ -130,4 +134,90 @@ def filter_by_date_range(df,date_column,start_date,end_date):
     #filter the DataFrame
     filtered_df = df[(df[date_column]>=start_date)&(df[date_column]<=end_date)]
     return filtered_df
+
+#setch real time stock data
+def fetch_real_time_stock_data(symbol):
+    try:
+        stock=yf.Ticker(symbol)
+        data=stock.info
+        return {
+            "symbol":symbol,
+            "price":data.get("regularMarketPrice"),
+            "volume":data.get("regularMarketVolume"),
+            "market_cap":data.get("marketCap"),
+            "timestamp":datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+    except Exception as e:
+        raise Exception(f"Error fetching real-time data for {symbol}:{e}")
+
+#fetch financial statements like balance sheets,income statements and cash flow statements
+
+def fetch_financial_statements(symbol):
+    try:
+        stock=yf.Ticker(symbol)
+        balance_sheet=stock.balance_sheet
+        income_statement=stock.financials
+        cash_flow=stock.cash_flow
+        return {
+            "balance_sheet":balance_sheet.to_dict(),
+            "income_statement":income_statement.to_dict(),
+            "cash_flow":cash_flow.to_dict()
+        }
+    except Exception as e:
+        raise Exception(f"Error fetching financial statements for {symbol}:{e}")
+
+#filter stocks
+def filter_stocks_by_price(stocks,min_price,max_price):
+    return stocks[(stocks['Close']>=min_price)&(stocks['Close']<=max_price)]
+
+def filter_stocks_by_volume(stocks,min_volumes):
+    return stocks[stocks['Volume']>=min_volumes]
+
+#cache data locally
+def cache_date(symbol,data):
+    data.to_csv(f"data/{symbol}_data.csv")
+
+def load_cache_data(symbol):
+    try:
+        return pd.read_csv(f"data/{symbol}_data.csv",index_col=0,parse_dates=True)
+    except FileNotFoundError:
+        return None
+
+
+#calculate moving AVERAGES CONVERGENCE DIVERGENCE (MACD)
+def calculate_macd(df,short_window=12,long_window=26,signal_window=9):
+    df['EMA_Short']=df['Close'].ewm(span=short_window,adjust=False).mean()
+    df['EMA_Long']=df['Close'].ewm(span=long_window,adjust=False).mean()
+    df['MACD']=df['EMA_Short'] -df['EMA_Long']
+    df['Signal_Line']=df['MACD'].ewm(span=signal_window,adjust=False).mean()
+    df['MACD_Histogram']=df['MACD'] - df['Signal_Line']
+    return df
+
+#calculate Average True Range (ATR)
+
+def calculate_atr(df,window=14):
+    high_low=df['High']-df['Low']
+    high_close=abs(df['High']-df['Close'].shift())
+    low_close=abs(df['Low']-df['Close'].shift())
+    ranges=pd.concat([high_low,high_close,low_close],axis=1)
+    true_range=ranges.max(axis=1)
+    df['ATR']=true_range.rolling(window=window).mean()
+    return df
+
+#calculate stochastic oscillator
+#compares a stocks closing price to its price range over a specified period
+def calculate_stochastic_oscillator(df,window=14,smooth_k=3,smooth_d=3):
+    low_min=df['Low'].rolling(window=window).min()
+    high_max=df['High'].rolling(window=window).max()
+    df['%K']=((df['Close']-low_min)/(high_max-low_min))**100
+    df['%D']=df['%K'].rolling(window=smooth_k).mean()
+    df['%D_Slow']=df['%D'].rolling(window=smooth_d).mean()
+    return df
+
+#Identify support and resistance levels
+def find_support_resistance(df,window=20):
+    rolling_max=df['High'].rolling(window=window).max()
+    rolling_min=df['Low'].rolling(window=window).min()
+    support=rolling_min.iloc[-1]
+
 
