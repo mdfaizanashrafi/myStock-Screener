@@ -1,4 +1,5 @@
 from flask import Flask
+import routes.stock_routes
 from dotenv import load_dotenv
 import os
 

@@ -96,3 +96,38 @@ def get_resampled_data(df,interval='W'):
         return df
     return resample_to_custom_interval(df,interval)
 
+#adding technical indicators to the stock data:
+#Moving Average (MA), Relative Strength Index (RSI) and Bollinger Bands
+
+def add_technical_indicators(df,indicators):
+    for indicator in indicators:
+        if indicator == 'MA':
+            #calculate 10days and 50 days moving avg
+            df['MA_10'] = df['Close'].rolling(window=10).mean()
+            df['MA_50'] = df['Close'].rolling(window=50).mean()
+
+        elif indicator == 'RSI':
+            #calculate 14-day RSI (Relative Strength Index)
+            delta = df['CLose'].diff()  #calculates between concsec closing price
+            gain = (delta.where(delta > 0,0)).rolling(window=14).mean() #keeps positive value and replaces negative to 0
+            loss = (-delta.where(delta< 0,0)).rolling(window=14).mean() #keeps megative value and converts into positive, and converts positive to 0
+            rs = gain/loss.replace(0,1e-10) #relative stength, replace 0 with a very small number
+            df['RSI'] = 100 - (100/(1+rs))
+
+        elif indicator == 'BB': #calculate bollinger bands
+            rolling_mean = df['CLose'].rolling(window=20).mean()
+            rolling_std = df['Close'].rolling(window=20).std()
+            df['BB_Upper'] = rolling_mean+(2*rolling_std)
+            df['BB_Lower'] = rolling_mean-(2*rolling_std)
+    return df
+
+#filter by date range
+def filter_by_date_range(df,date_column,start_date,end_date):
+    #convert start date and end date to datetime
+    start_date=pd.to_datetime(start_date)
+    end_date=pd.to_datetime(end_date)
+
+    #filter the DataFrame
+    filtered_df = df[(df[date_column]>=start_date)&(df[date_column]<=end_date)]
+    return filtered_df
+
