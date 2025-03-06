@@ -8,7 +8,7 @@ import time
 from datetime import datetime
 
 #fetch historical stock data for a given symbol using yfinance
-def fetch_stock_data(symbol,period='1y',interval='1d', retries=3, timeout=10):
+def fetch_stock_data(symbol, period='1y', interval='1d', retries=3, timeout=10):
     """Args:
             symbol: stock symbol like REL,OIC,etc
             period: time period for data like 1d,1mo or 1y
@@ -23,8 +23,10 @@ def fetch_stock_data(symbol,period='1y',interval='1d', retries=3, timeout=10):
 
             if df.empty:
                 raise ValueError(f"No data found for symbol: {symbol}")
-                #Clean up column names:
-            df.reset_index(inplace=True)  #Reset index to include 'Date' as a column
+            
+            # Clean up column names:
+            df.reset_index(inplace=True)  # Reset index to include 'Date' as a column
+            df.rename(columns={'Datetime': 'Date'}, inplace=True)  # Rename 'Datetime' to 'Date' if needed
             return df
         except Exception as e:
             print(f"Attempt {attempt+1} failed: {e}")
